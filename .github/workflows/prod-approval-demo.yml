@@ -1,0 +1,56 @@
+name: Prod approval demo (A -> B -> SRE -> prod)
+
+on:
+  workflow_dispatch: {}   # 手動実行（検証に向く）
+  push:
+    branches: ["main"]    # 必要なら main 限定。検証なら workflow_dispatch だけでもOK
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: prod-approval-demo
+  cancel-in-progress: false
+
+jobs:
+  build_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build (dummy)
+        run: echo "build..."
+      - name: Test (dummy)
+        run: echo "test..."
+
+  gate_a:
+    needs: [build_test]
+    runs-on: ubuntu-latest
+    environment: gate-a
+    steps:
+      - name: Gate A passed
+        run: echo "approved by reviewer A"
+
+  gate_b:
+    needs: [gate_a]
+    runs-on: ubuntu-latest
+    environment: gate-b
+    steps:
+      - name: Gate B passed
+        run: echo "approved by reviewer B"
+
+  gate_sre:
+    needs: [gate_b]
+    runs-on: ubuntu-latest
+    environment: gate-sre
+    steps:
+      - name: Gate SRE passed
+        run: echo "approved by SRE"
+
+  deploy_production:
+    needs: [gate_sre]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Deploy production (dummy)
+        run: echo "deploy production (dummy) ..."
